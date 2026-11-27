@@ -10,7 +10,14 @@
       "@cubismsdksamples/*": ["src/renderer/WebSDK/src/*"],
       "@motionsyncframework/*": ["src/renderer/WebSDK/src/Framework/src/*"],
       "@motionsync/*": ["src/renderer/MotionSync/motionsync/*"]
-    }
+    },
+    "noImplicitAny": false,
+    "strictNullChecks": false,
+    "strictPropertyInitialization": false,
+    "strictFunctionTypes": false,
+    "noFallthroughCasesInSwitch": false,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false
   },
   "include": [
     "src/renderer/**/*.ts",

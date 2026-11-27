@@ -4,7 +4,8 @@ import { Box, Flex, ChakraProvider, defaultSystem } from "@chakra-ui/react";
 import { useState, useEffect, useRef } from "react";
 // import Canvas from './components/canvas/canvas'; // Likely unused now
 import Sidebar from "./components/sidebar/sidebar";
-import Footer from "./components/footer/footer";
+import { Composer } from "./modules/composer/Composer";
+import { ConnectionStatus } from "./modules/connection/ConnectionStatus";
 import { AiStateProvider } from "./context/ai-state-context";
 import { Live2DConfigProvider } from "./context/live2d-config-context";
 import { SubtitleProvider } from "./context/subtitle-context";
@@ -26,12 +27,13 @@ import { BrowserProvider } from "./context/browser-context";
 // eslint-disable-next-line import/no-extraneous-dependencies, import/newline-after-import
 import "@chatscope/chat-ui-kit-styles/dist/default/styles.min.css";
 import Background from "./components/canvas/background";
-import WebSocketStatus from "./components/canvas/ws-status";
 import Subtitle from "./components/canvas/subtitle";
 import { ModeProvider, useMode } from "./context/mode-context";
 
 function AppContent(): JSX.Element {
-  const [showSidebar, setShowSidebar] = useState(true);
+  const [showSidebar, setShowSidebar] = useState(
+    () => window.innerWidth >= 768,
+  );
   const [isFooterCollapsed, setIsFooterCollapsed] = useState(false);
   const { mode } = useMode();
   const isElectron = window.api !== undefined;
@@ -47,15 +49,24 @@ function AppContent(): JSX.Element {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-    
-  document.documentElement.style.overflow = 'hidden';
-  document.body.style.overflow = 'hidden';
-  document.documentElement.style.height = '100%';
-  document.body.style.height = '100%';
-  document.documentElement.style.position = 'fixed';
-  document.body.style.position = 'fixed';
-  document.documentElement.style.width = '100%';
-  document.body.style.width = '100%';
+  useEffect(() => {
+    const desktopMedia = window.matchMedia("(min-width: 768px)");
+    const syncSidebarToBreakpoint = (event: MediaQueryListEvent) => {
+      setShowSidebar(event.matches);
+    };
+    desktopMedia.addEventListener("change", syncSidebarToBreakpoint);
+    return () =>
+      desktopMedia.removeEventListener("change", syncSidebarToBreakpoint);
+  }, []);
+
+  document.documentElement.style.overflow = "hidden";
+  document.body.style.overflow = "hidden";
+  document.documentElement.style.height = "100%";
+  document.body.style.height = "100%";
+  document.documentElement.style.position = "fixed";
+  document.body.style.position = "fixed";
+  document.documentElement.style.width = "100%";
+  document.body.style.width = "100%";
 
   // Define base style properties shared across modes/breakpoints
   const live2dBaseStyle = {
@@ -112,7 +123,14 @@ function AppContent(): JSX.Element {
           <Flex {...layoutStyles.appContainer}>
             <Box
               {...layoutStyles.sidebar}
-              {...(!showSidebar && { width: "24px" })}
+              height={
+                showSidebar
+                  ? { base: "45vh", md: "100%" }
+                  : { base: "24px", md: "100%" }
+              }
+              {...(!showSidebar && {
+                width: { base: "100%", md: "24px" },
+              })}
             >
               <Sidebar
                 isCollapsed={!showSidebar}
@@ -122,7 +140,7 @@ function AppContent(): JSX.Element {
             <Box {...layoutStyles.mainContent}>
               <Background />
               <Box position="absolute" top="20px" left="20px" zIndex={10}>
-                <WebSocketStatus />
+                <ConnectionStatus />
               </Box>
               <Box
                 position="absolute"
@@ -139,7 +157,7 @@ function AppContent(): JSX.Element {
                 zIndex={10}
                 {...(isFooterCollapsed && layoutStyles.collapsedFooter)}
               >
-                <Footer
+                <Composer
                   isCollapsed={isFooterCollapsed}
                   onToggle={() => setIsFooterCollapsed(!isFooterCollapsed)}
                 />
