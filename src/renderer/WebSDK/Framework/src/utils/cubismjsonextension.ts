@@ -12,8 +12,7 @@ import {
   JsonMap,
   JsonNullvalue,
   JsonString,
-  Value
-} from './cubismjson';
+} from "./cubismjson";
 
 /**
  * CubismJsonで実装されているJsonパーサを使用せず、
@@ -22,15 +21,15 @@ import {
  * 置き換える処理をするクラス。
  */
 export class CubismJsonExtension {
-  static parseJsonObject(obj: Value, map: JsonMap) {
+  static parseJsonObject(obj: any, map: JsonMap) {
     Object.keys(obj).forEach((key) => {
-      if (typeof obj[key] == 'boolean') {
+      if (typeof obj[key] == "boolean") {
         const convValue = Boolean(obj[key]);
         map.put(key, new JsonBoolean(convValue));
-      } else if (typeof obj[key] == 'string') {
+      } else if (typeof obj[key] == "string") {
         const convValue = String(obj[key]);
         map.put(key, new JsonString(convValue));
-      } else if (typeof obj[key] == 'number') {
+      } else if (typeof obj[key] == "number") {
         const convValue = Number(obj[key]);
         map.put(key, new JsonFloat(convValue));
       } else if (obj[key] instanceof Array) {
@@ -38,7 +37,7 @@ export class CubismJsonExtension {
       } else if (obj[key] instanceof Object) {
         map.put(
           key,
-          CubismJsonExtension.parseJsonObject(obj[key], new JsonMap())
+          CubismJsonExtension.parseJsonObject(obj[key], new JsonMap()),
         );
       } else if (obj[key] == null) {
         map.put(key, new JsonNullvalue());
@@ -50,18 +49,18 @@ export class CubismJsonExtension {
     return map;
   }
 
-  protected static parseJsonArray(obj: Value) {
+  protected static parseJsonArray(obj: any) {
     const arr = new JsonArray();
     Object.keys(obj).forEach((key) => {
       const convKey = Number(key);
-      if (typeof convKey == 'number') {
-        if (typeof obj[key] == 'boolean') {
+      if (typeof convKey == "number") {
+        if (typeof obj[key] == "boolean") {
           const convValue = Boolean(obj[key]);
           arr.add(new JsonBoolean(convValue));
-        } else if (typeof obj[key] == 'string') {
+        } else if (typeof obj[key] == "string") {
           const convValue = String(obj[key]);
           arr.add(new JsonString(convValue));
-        } else if (typeof obj[key] == 'number') {
+        } else if (typeof obj[key] == "number") {
           const convValue = Number(obj[key]);
           arr.add(new JsonFloat(convValue));
         } else if (obj[key] instanceof Array) {

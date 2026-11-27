@@ -1,11 +1,11 @@
 /* eslint-disable global-require */
 /* eslint-disable @typescript-eslint/no-var-requires */
 /* eslint-disable no-use-before-define */
-import { Subject } from 'rxjs';
-import { ModelInfo } from '@/context/live2d-config-context';
-import { HistoryInfo } from '@/context/websocket-context';
-import { ConfigFile } from '@/context/character-config-context';
-import { toaster } from '@/components/ui/toaster';
+import { Subject } from "rxjs";
+import { ModelInfo } from "@/context/live2d-config-context";
+import { HistoryInfo } from "@/context/websocket-context";
+import { ConfigFile } from "@/context/character-config-context";
+import { toaster } from "@/components/ui/toaster";
 
 export interface DisplayText {
   text: string;
@@ -19,7 +19,7 @@ interface BackgroundFile {
 }
 
 export interface AudioPayload {
-  type: 'audio';
+  type: "audio";
   audio?: string;
   volumes?: number[];
   slice_length?: number;
@@ -36,14 +36,14 @@ export interface Message {
   avatar?: string;
 
   // Fields for different message types (make optional)
-  type?: 'text' | 'tool_call_status'; // Add possible types, default to 'text' if omitted
+  type?: "text" | "tool_call_status"; // Add possible types, default to 'text' if omitted
   tool_id?: string; // Specific to tool calls
   tool_name?: string; // Specific to tool calls
-  status?: 'running' | 'completed' | 'error'; // Specific to tool calls
+  status?: "running" | "completed" | "error"; // Specific to tool calls
 }
 
 export interface Actions {
-  expressions?: string[] | number [];
+  expressions?: string[] | number[];
   pictures?: string[];
   sounds?: string[];
 }
@@ -97,7 +97,7 @@ export interface MessageEvent {
 // Get translation function for error messages
 const getTranslation = () => {
   try {
-    const i18next = require('i18next').default;
+    const i18next = require("i18next").default;
     return i18next.t.bind(i18next);
   } catch (e) {
     // Fallback if i18next is not available
@@ -112,9 +112,21 @@ class WebSocketService {
 
   private messageSubject = new Subject<MessageEvent>();
 
-  private stateSubject = new Subject<'CONNECTING' | 'OPEN' | 'CLOSING' | 'CLOSED'>();
+  private stateSubject = new Subject<
+    "CONNECTING" | "OPEN" | "CLOSING" | "CLOSED"
+  >();
 
-  private currentState: 'CONNECTING' | 'OPEN' | 'CLOSING' | 'CLOSED' = 'CLOSED';
+  private latencySubject = new Subject<number>();
+
+  private currentState: "CONNECTING" | "OPEN" | "CLOSING" | "CLOSED" = "CLOSED";
+
+  private heartbeatTimer: ReturnType<typeof setInterval> | null = null;
+
+  private heartbeatSentAt: number | null = null;
+
+  private heartbeatInFlight = false;
+
+  private latestLatencyMs: number | null = null;
 
   static getInstance() {
     if (!WebSocketService.instance) {
@@ -123,46 +135,102 @@ class WebSocketService {
     return WebSocketService.instance;
   }
 
+  private startHeartbeat() {
+    this.stopHeartbeat();
+    this.sendHeartbeat();
+    this.heartbeatTimer = setInterval(() => this.sendHeartbeat(), 15000);
+  }
+
+  private stopHeartbeat() {
+    if (this.heartbeatTimer) {
+      clearInterval(this.heartbeatTimer);
+      this.heartbeatTimer = null;
+    }
+    this.heartbeatSentAt = null;
+    this.heartbeatInFlight = false;
+    this.latestLatencyMs = null;
+  }
+
+  private sendHeartbeat() {
+    if (this.ws?.readyState !== WebSocket.OPEN) return;
+    if (
+      this.heartbeatInFlight &&
+      this.heartbeatSentAt !== null &&
+      performance.now() - this.heartbeatSentAt < 12000
+    ) {
+      return;
+    }
+
+    try {
+      this.heartbeatSentAt = performance.now();
+      this.heartbeatInFlight = true;
+      this.ws.send(JSON.stringify({ type: "heartbeat" }));
+    } catch (error) {
+      console.warn("Failed to send heartbeat:", error);
+      this.heartbeatSentAt = null;
+      this.heartbeatInFlight = false;
+    }
+  }
+
+  private handleHeartbeatAck() {
+    if (!this.heartbeatInFlight || this.heartbeatSentAt === null) return;
+    const latencyMs = Math.max(
+      0,
+      Math.round(performance.now() - this.heartbeatSentAt),
+    );
+    this.heartbeatSentAt = null;
+    this.heartbeatInFlight = false;
+    this.latestLatencyMs = latencyMs;
+    this.latencySubject.next(latencyMs);
+  }
+
   private initializeConnection() {
     this.sendMessage({
-      type: 'fetch-backgrounds',
+      type: "fetch-backgrounds",
     });
     this.sendMessage({
-      type: 'fetch-configs',
+      type: "fetch-configs",
     });
     this.sendMessage({
-      type: 'fetch-history-list',
+      type: "fetch-history-list",
     });
     this.sendMessage({
-      type: 'create-new-history',
+      type: "create-new-history",
     });
   }
 
   connect(url: string) {
-    if (this.ws?.readyState === WebSocket.CONNECTING ||
-        this.ws?.readyState === WebSocket.OPEN) {
+    if (
+      this.ws?.readyState === WebSocket.CONNECTING ||
+      this.ws?.readyState === WebSocket.OPEN
+    ) {
       this.disconnect();
     }
 
     try {
       this.ws = new WebSocket(url);
-      this.currentState = 'CONNECTING';
-      this.stateSubject.next('CONNECTING');
+      this.currentState = "CONNECTING";
+      this.stateSubject.next("CONNECTING");
 
       this.ws.onopen = () => {
-        this.currentState = 'OPEN';
-        this.stateSubject.next('OPEN');
+        this.currentState = "OPEN";
+        this.stateSubject.next("OPEN");
+        this.startHeartbeat();
         this.initializeConnection();
       };
 
       this.ws.onmessage = (event) => {
         try {
           const message = JSON.parse(event.data);
+          if (message.type === "heartbeat-ack") {
+            this.handleHeartbeatAck();
+            return;
+          }
           this.messageSubject.next(message);
         } catch (error) {
-          console.error('Failed to parse WebSocket message:', error);
+          console.error("Failed to parse WebSocket message:", error);
           toaster.create({
-            title: `${getTranslation()('error.failedParseWebSocket')}: ${error}`,
+            title: `${getTranslation()("error.failedParseWebSocket")}: ${error}`,
             type: "error",
             duration: 2000,
           });
@@ -170,18 +238,20 @@ class WebSocketService {
       };
 
       this.ws.onclose = () => {
-        this.currentState = 'CLOSED';
-        this.stateSubject.next('CLOSED');
+        this.stopHeartbeat();
+        this.currentState = "CLOSED";
+        this.stateSubject.next("CLOSED");
       };
 
       this.ws.onerror = () => {
-        this.currentState = 'CLOSED';
-        this.stateSubject.next('CLOSED');
+        this.stopHeartbeat();
+        this.currentState = "CLOSED";
+        this.stateSubject.next("CLOSED");
       };
     } catch (error) {
-      console.error('Failed to connect to WebSocket:', error);
-      this.currentState = 'CLOSED';
-      this.stateSubject.next('CLOSED');
+      console.error("Failed to connect to WebSocket:", error);
+      this.currentState = "CLOSED";
+      this.stateSubject.next("CLOSED");
     }
   }
 
@@ -189,10 +259,10 @@ class WebSocketService {
     if (this.ws?.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify(message));
     } else {
-      console.warn('WebSocket is not open. Unable to send message:', message);
+      console.warn("WebSocket is not open. Unable to send message:", message);
       toaster.create({
-        title: getTranslation()('error.websocketNotOpen'),
-        type: 'error',
+        title: getTranslation()("error.websocketNotOpen"),
+        type: "error",
         duration: 2000,
       });
     }
@@ -202,11 +272,21 @@ class WebSocketService {
     return this.messageSubject.subscribe(callback);
   }
 
-  onStateChange(callback: (state: 'CONNECTING' | 'OPEN' | 'CLOSING' | 'CLOSED') => void) {
+  onStateChange(
+    callback: (state: "CONNECTING" | "OPEN" | "CLOSING" | "CLOSED") => void,
+  ) {
     return this.stateSubject.subscribe(callback);
   }
 
+  onLatency(callback: (latencyMs: number) => void) {
+    if (this.latestLatencyMs !== null) {
+      callback(this.latestLatencyMs);
+    }
+    return this.latencySubject.subscribe(callback);
+  }
+
   disconnect() {
+    this.stopHeartbeat();
     this.ws?.close();
     this.ws = null;
   }

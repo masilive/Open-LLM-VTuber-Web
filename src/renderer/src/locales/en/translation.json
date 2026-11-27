@@ -71,7 +71,18 @@
     "cameraControl": "Click to start camera",
     "cameraStopping": "Click to stop camera",
     "screenControl": "Click to start screen capture",
-    "screenStopping": "Click to stop screen capture"
+    "screenStopping": "Click to stop screen capture",
+    "send": "Send message",
+    "attachImage": "Attach an image",
+    "removeAttachment": "Remove attachment",
+    "keyboardHint": "Enter to send · Shift+Enter for a new line",
+    "microphoneOn": "Microphone on",
+    "microphoneOff": "Microphone off",
+    "interruptConversation": "Interrupt AI",
+    "promptAi": "Invite AI to speak",
+    "attachmentUnsupported": "Please choose a PNG, JPEG, WebP, or GIF image",
+    "attachmentTooLarge": "Images must be smaller than 5 MB",
+    "attachmentLimit": "You can attach up to 3 images"
   },
   "sidebar": {
     "camera": "Camera",
@@ -80,7 +91,17 @@
     "live": "Live",
     "noMessages": "No messages yet. Start a conversation!",
     "noBrowserSession": "No active browser session",
-    "browserSession": "Browser Session"
+    "browserSession": "Browser Session",
+    "emptyTitle": "No messages yet",
+    "emptyDescription": "Say hello, ask a question, or use the microphone. Your companion is ready when you are.",
+    "toolRunning": "{{name}} is using {{tool}}",
+    "toolCompleted": "{{name}} used {{tool}}",
+    "settings": "Settings",
+    "group": "Group session",
+    "history": "Chat history",
+    "newConversation": "New conversation",
+    "windowMode": "Window mode",
+    "petMode": "Pet mode"
   },
   "group": {
     "management": "Group Management",
@@ -124,16 +145,37 @@
     "vadMisfire": "Voice detected but too brief. Try speaking louder/longer, or adjust settings (lower speech threshold, lower negative threshold, reduce redemption frames)."
   },
   "aiState": {
-    "idle": "idle",
-    "thinking-speaking": "thinking/speaking",
-    "interrupted": "interrupted",
-    "loading": "loading",
-    "listening": "listening",
-    "waiting": "waiting"
+    "idle": "Ready",
+    "thinking-speaking": "Thinking…",
+    "interrupted": "Paused",
+    "loading": "Waking up…",
+    "listening": "Listening…",
+    "waiting": "Typing…"
   },
   "wsStatus": {
     "connected": "Connected",
     "connecting": "Connecting",
     "clickToReconnect": "Click to Reconnect"
+  },
+  "connection": {
+    "detailsTitle": "Connection health",
+    "connected": "Connected",
+    "connecting": "Connecting",
+    "reconnect": "Reconnect",
+    "offline": "Offline",
+    "quality": {
+      "excellent": "Excellent",
+      "good": "Good",
+      "fair": "Fair",
+      "poor": "Poor",
+      "unknown": "Measuring",
+      "offline": "Offline"
+    },
+    "latencyNow": "Latest ping",
+    "latencyAverage": "Average",
+    "latencyRange": "Range",
+    "waitingForHeartbeat": "Waiting for the first heartbeat…",
+    "heartbeatHelp": "A small heartbeat measures round-trip time so you can see connection quality before speaking.",
+    "reconnectHint": "Reconnect when you are ready."
   }
-} 
+}

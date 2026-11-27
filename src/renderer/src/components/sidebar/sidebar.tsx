@@ -1,138 +1,205 @@
 /* eslint-disable react/require-default-props */
-import { Box, Button, Menu } from '@chakra-ui/react';
+import { Box, Button, Menu, useBreakpointValue } from "@chakra-ui/react";
 import {
-  FiSettings, FiClock, FiPlus, FiChevronLeft, FiUsers, FiLayers
-} from 'react-icons/fi';
-import { memo } from 'react';
-import { sidebarStyles } from './sidebar-styles';
-import SettingUI from './setting/setting-ui';
-import ChatHistoryPanel from './chat-history-panel';
-import BottomTab from './bottom-tab';
-import HistoryDrawer from './history-drawer';
-import { useSidebar } from '@/hooks/sidebar/use-sidebar';
-import GroupDrawer from './group-drawer';
-import { ModeType } from '@/context/mode-context';
+  FiSettings,
+  FiClock,
+  FiPlus,
+  FiChevronLeft,
+  FiChevronDown,
+  FiUsers,
+  FiLayers,
+} from "react-icons/fi";
+import { memo } from "react";
+import { useTranslation } from "react-i18next";
+import { sidebarStyles } from "./sidebar-styles";
+import SettingUI from "./setting/setting-ui";
+import ChatHistoryPanel from "./chat-history-panel";
+import BottomTab from "./bottom-tab";
+import HistoryDrawer from "./history-drawer";
+import { useSidebar } from "@/hooks/sidebar/use-sidebar";
+import GroupDrawer from "./group-drawer";
+import { ModeType } from "@/context/mode-context";
 
 // Type definitions
 interface SidebarProps {
-  isCollapsed?: boolean
-  onToggle: () => void
+  isCollapsed?: boolean;
+  onToggle: () => void;
 }
 
 interface HeaderButtonsProps {
-  onSettingsOpen: () => void
-  onNewHistory: () => void
-  setMode: (mode: ModeType) => void
-  currentMode: 'window' | 'pet'
-  isElectron: boolean
+  onSettingsOpen: () => void;
+  onNewHistory: () => void;
+  setMode: (mode: ModeType) => void;
+  currentMode: "window" | "pet";
+  isElectron: boolean;
 }
 
 // Reusable components
-const ToggleButton = memo(({ isCollapsed, onToggle }: {
-  isCollapsed: boolean
-  onToggle: () => void
-}) => (
-  <Box
-    {...sidebarStyles.sidebar.toggleButton}
-    style={{
-      transform: isCollapsed ? 'rotate(180deg)' : 'rotate(0deg)',
-    }}
-    onClick={onToggle}
-  >
-    <FiChevronLeft />
-  </Box>
-));
+const ToggleButton = memo(
+  ({
+    isCollapsed,
+    onToggle,
+  }: {
+    isCollapsed: boolean;
+    onToggle: () => void;
+  }) => {
+    const isDesktop = useBreakpointValue({ base: false, md: true });
+    const Icon = isDesktop ? FiChevronLeft : FiChevronDown;
+    const rotation = isDesktop
+      ? isCollapsed
+        ? "rotate(180deg)"
+        : "rotate(0deg)"
+      : isCollapsed
+        ? "rotate(0deg)"
+        : "rotate(180deg)";
 
-ToggleButton.displayName = 'ToggleButton';
+    return (
+      <Box
+        {...sidebarStyles.sidebar.toggleButton}
+        role="button"
+        tabIndex={0}
+        aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+        style={{ transform: rotation }}
+        onClick={onToggle}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") onToggle();
+        }}
+      >
+        <Icon />
+      </Box>
+    );
+  },
+);
 
-const ModeMenu = memo(({ setMode, currentMode, isElectron }: {
-  setMode: (mode: ModeType) => void
-  currentMode: ModeType
-  isElectron: boolean
-}) => (
-  <Menu.Root>
-    <Menu.Trigger as={Button} aria-label="Mode Menu" title="Change Mode">
-      <FiLayers />
-    </Menu.Trigger>
-    <Menu.Positioner>
-      <Menu.Content>
-        <Menu.RadioItemGroup value={currentMode}>
-          <Menu.RadioItem value="window" onClick={() => setMode('window')}>
-            <Menu.ItemIndicator />
-            Live Mode
-          </Menu.RadioItem>
-          <Menu.RadioItem 
-            value="pet" 
-            onClick={() => {
-              if (isElectron) {
-                setMode('pet');
+ToggleButton.displayName = "ToggleButton";
+
+const ModeMenu = memo(
+  ({
+    setMode,
+    currentMode,
+    isElectron,
+  }: {
+    setMode: (mode: ModeType) => void;
+    currentMode: ModeType;
+    isElectron: boolean;
+  }) => (
+    <Menu.Root>
+      <Menu.Trigger as={Button} aria-label="Mode Menu" title="Change Mode">
+        <FiLayers />
+      </Menu.Trigger>
+      <Menu.Positioner>
+        <Menu.Content>
+          <Menu.RadioItemGroup value={currentMode}>
+            <Menu.RadioItem value="window" onClick={() => setMode("window")}>
+              <Menu.ItemIndicator />
+              Live Mode
+            </Menu.RadioItem>
+            <Menu.RadioItem
+              value="pet"
+              onClick={() => {
+                if (isElectron) {
+                  setMode("pet");
+                }
+              }}
+              disabled={!isElectron}
+              title={
+                !isElectron
+                  ? "Pet mode is only available in desktop app"
+                  : undefined
               }
-            }}
-            disabled={!isElectron}
-            title={!isElectron ? "Pet mode is only available in desktop app" : undefined}
+            >
+              <Menu.ItemIndicator />
+              Pet Mode
+            </Menu.RadioItem>
+          </Menu.RadioItemGroup>
+        </Menu.Content>
+      </Menu.Positioner>
+    </Menu.Root>
+  ),
+);
+
+ModeMenu.displayName = "ModeMenu";
+
+const HeaderButtons = memo(
+  ({
+    onSettingsOpen,
+    onNewHistory,
+    setMode,
+    currentMode,
+    isElectron,
+  }: HeaderButtonsProps) => {
+    const { t } = useTranslation();
+
+    return (
+      <Box display="flex" gap={1}>
+        <Button
+          onClick={onSettingsOpen}
+          aria-label={t("sidebar.settings")}
+          title={t("sidebar.settings")}
+        >
+          <FiSettings />
+        </Button>
+
+        <GroupDrawer>
+          <Button aria-label={t("sidebar.group")} title={t("sidebar.group")}>
+            <FiUsers />
+          </Button>
+        </GroupDrawer>
+
+        <HistoryDrawer>
+          <Button
+            aria-label={t("sidebar.history")}
+            title={t("sidebar.history")}
           >
-            <Menu.ItemIndicator />
-            Pet Mode
-          </Menu.RadioItem>
-        </Menu.RadioItemGroup>
-      </Menu.Content>
-    </Menu.Positioner>
-  </Menu.Root>
-));
+            <FiClock />
+          </Button>
+        </HistoryDrawer>
 
-ModeMenu.displayName = 'ModeMenu';
+        <Button
+          onClick={onNewHistory}
+          aria-label={t("sidebar.newConversation")}
+          title={t("sidebar.newConversation")}
+        >
+          <FiPlus />
+        </Button>
 
-const HeaderButtons = memo(({ onSettingsOpen, onNewHistory, setMode, currentMode, isElectron }: HeaderButtonsProps) => (
-  <Box display="flex" gap={1}>
-    <Button onClick={onSettingsOpen}>
-      <FiSettings />
-    </Button>
+        <ModeMenu
+          setMode={setMode}
+          currentMode={currentMode}
+          isElectron={isElectron}
+        />
+      </Box>
+    );
+  },
+);
 
-    <GroupDrawer>
-      <Button>
-        <FiUsers />
-      </Button>
-    </GroupDrawer>
+HeaderButtons.displayName = "HeaderButtons";
 
-    <HistoryDrawer>
-      <Button>
-        <FiClock />
-      </Button>
-    </HistoryDrawer>
-
-    <Button onClick={onNewHistory}>
-      <FiPlus />
-    </Button>
-
-    <ModeMenu setMode={setMode} currentMode={currentMode} isElectron={isElectron} />
-  </Box>
-));
-
-HeaderButtons.displayName = 'HeaderButtons';
-
-const SidebarContent = memo(({ 
-  onSettingsOpen, 
-  onNewHistory, 
-  setMode, 
-  currentMode,
-  isElectron
-}: HeaderButtonsProps) => (
-  <Box {...sidebarStyles.sidebar.content}>
-    <Box {...sidebarStyles.sidebar.header}>
-      <HeaderButtons
-        onSettingsOpen={onSettingsOpen}
-        onNewHistory={onNewHistory}
-        setMode={setMode}
-        currentMode={currentMode}
-        isElectron={isElectron}
-      />
+const SidebarContent = memo(
+  ({
+    onSettingsOpen,
+    onNewHistory,
+    setMode,
+    currentMode,
+    isElectron,
+  }: HeaderButtonsProps) => (
+    <Box {...sidebarStyles.sidebar.content}>
+      <Box {...sidebarStyles.sidebar.header}>
+        <HeaderButtons
+          onSettingsOpen={onSettingsOpen}
+          onNewHistory={onNewHistory}
+          setMode={setMode}
+          currentMode={currentMode}
+          isElectron={isElectron}
+        />
+      </Box>
+      <ChatHistoryPanel />
+      <BottomTab />
     </Box>
-    <ChatHistoryPanel />
-    <BottomTab />
-  </Box>
-));
+  ),
+);
 
-SidebarContent.displayName = 'SidebarContent';
+SidebarContent.displayName = "SidebarContent";
 
 // Main component
 function Sidebar({ isCollapsed = false, onToggle }: SidebarProps): JSX.Element {

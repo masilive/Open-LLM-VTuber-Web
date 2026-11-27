@@ -1,13 +1,13 @@
-import { useState } from 'react';
-import { useWebSocket } from '@/context/websocket-context';
-import { useAiState } from '@/context/ai-state-context';
-import { useInterrupt } from '@/components/canvas/live2d';
-import { useChatHistory } from '@/context/chat-history-context';
-import { useVAD } from '@/context/vad-context';
-import { useMediaCapture } from '@/hooks/utils/use-media-capture';
+import { useState } from "react";
+import { useWebSocket } from "@/context/websocket-context";
+import { useAiState } from "@/context/ai-state-context";
+import { useInterrupt } from "@/components/canvas/live2d";
+import { useChatHistory } from "@/context/chat-history-context";
+import { useVAD } from "@/context/vad-context";
+import { useMediaCapture } from "@/hooks/utils/use-media-capture";
 
 export function useTextInput() {
-  const [inputText, setInputText] = useState('');
+  const [inputText, setInputText] = useState("");
   const [isComposing, setIsComposing] = useState(false);
   const wsContext = useWebSocket();
   const { aiState } = useAiState();
@@ -20,29 +20,38 @@ export function useTextInput() {
     setInputText(e.target.value);
   };
 
-  const handleSend = async () => {
-    if (!inputText.trim() || !wsContext) return;
-    if (aiState === 'thinking-speaking') {
+  const handleSend = async (
+    additionalImages: {
+      source: string;
+      data: string;
+      mime_type: string;
+    }[] = [],
+  ) => {
+    const textToSend = inputText.trim();
+    if (!textToSend || !wsContext) return false;
+    if (aiState === "thinking-speaking") {
       interrupt();
     }
 
-    const images = await captureAllMedia();
+    const capturedImages = await captureAllMedia();
+    const images = [...capturedImages, ...additionalImages];
 
-    appendHumanMessage(inputText.trim());
+    appendHumanMessage(textToSend);
     wsContext.sendMessage({
-      type: 'text-input',
-      text: inputText.trim(),
+      type: "text-input",
+      text: textToSend,
       images,
     });
 
     if (autoStopMic) stopMic();
-    setInputText('');
+    setInputText("");
+    return true;
   };
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (isComposing) return;
 
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSend();
     }
