@@ -17,6 +17,7 @@ import { SubtitleContext } from "./subtitle-context";
 import { AiStateContext, AiState } from "./ai-state-context";
 import { useLocalStorage } from "@/hooks/utils/use-local-storage";
 import { toaster } from "@/components/ui/toaster";
+import { waitForStartupIdle } from "@/utils/startup";
 
 /**
  * VAD settings configuration interface
@@ -283,6 +284,7 @@ export function VADProvider({ children }: { children: React.ReactNode }) {
    * Initialize new VAD instance
    */
   const initVAD = async () => {
+    await waitForStartupIdle();
     const { MicVAD: RuntimeMicVAD } = await import("@ricky0123/vad-web");
     const newVAD = await RuntimeMicVAD.new({
       model: "v5",

@@ -38,6 +38,7 @@ export default defineConfig({
         "src/renderer/src/components/ui/empty-state.tsx",
         "src/renderer/src/components/ui/sparkline.tsx",
         "src/renderer/src/components/ui/safe-avatar.tsx",
+        "src/renderer/src/utils/startup.ts",
       ],
       exclude: [
         "src/renderer/src/**/*.test.ts",
