@@ -325,7 +325,10 @@ export class LAppDelegate {
     CubismFramework.initialize();
 
     // load model
-    LAppLive2DManager.getInstance();
+    const live2dManager = LAppLive2DManager.getInstance();
+    if (!live2dManager.getModel(0) && LAppDefine.ModelDirSize > 0) {
+      live2dManager.changeScene(0);
+    }
 
     LAppPal.updateTime();
 

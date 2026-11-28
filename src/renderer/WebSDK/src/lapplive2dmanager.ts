@@ -223,7 +223,12 @@ export class LAppLive2DManager {
     this._viewMatrix = new CubismMatrix44();
     this._models = new csmVector<LAppModel>();
     this._sceneIndex = 0;
-    this.changeScene(this._sceneIndex);
+    if (
+      LAppDefine.ModelDirSize > 0 &&
+      LAppDefine.ModelDir[this._sceneIndex]
+    ) {
+      this.changeScene(this._sceneIndex);
+    }
   }
 
   _viewMatrix: CubismMatrix44; // モデル描画に用いるview行列

@@ -208,6 +208,9 @@ try {
       if (message.type() === "error") consoleErrors.push(message.text());
     });
     page.on("pageerror", (error) => consoleErrors.push(String(error)));
+    page.on("response", (response) => {
+      if (response.status() >= 400) consoleErrors.push(`${response.status()} ${response.url()}`);
+    });
     await page.setViewport({
       width: scenario.width,
       height: scenario.height,
